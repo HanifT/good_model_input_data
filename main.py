@@ -97,3 +97,5 @@ all_objects_file_path = 'all_objects.json'
 # Read the JSON file
 with open(all_objects_file_path, 'r') as all_objects_file:
     loaded_objects = json.load(all_objects_file)
+
+# final
