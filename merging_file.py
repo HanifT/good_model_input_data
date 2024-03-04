@@ -414,7 +414,8 @@ def renewable_transmission_cost(Unit_Cost_df, Regional_Cost_df, Wind_capital_cos
     Wind_trans_capital_cost_final = wind_cost_dic(Wind_capital_cost_copy)
     Solar_trans_capital_cost_photov_final = solar_cost_dic(Solar_capital_cost_photov_copy)
 
-    return Wind_trans_capital_cost_final, Solar_trans_capital_cost_photov_final
+    return Wind_trans_capital_cost_final, Solar_trans_capital_cost_photov_final, Wind_capital_cost_copy, Solar_capital_cost_photov_copy
+
 
 
 def trans_object(df1, df2):
@@ -493,3 +494,70 @@ def storage_object(df):
         stor_example.append({'id': region_name, 'dependents': [{'data_type': plant_type, 'parameters':  [{"cost": cost,"capacity": capacity, "group_id": group_id}]}]})
     return stor_example
 
+
+def solar_object(df1, df2, df3, df4, Plants_group):
+    max_cap = Plants_group.groupby(["RegionName", "PlantType"])["Capacity"].sum().reset_index(drop=False)
+    max_cap = max_cap[max_cap["PlantType"] == "Solar PV"].reset_index(drop=True)
+    # Example structure of DataFrames for reference
+    # df1 (generation_profile) might have columns: ['region_name', 'solar_cf', 'hour', 'value']
+    # df2 (solar_cost) might have columns: ['region_name', 'cost_class', 'value']
+    # df3 (solar_max_capacity) might have columns: ['region_name', 'cost_class', 'max_capacity']
+    # df4 (solar_installed_capacity) might have columns: ['region_name', 'value']
+
+    # Initialize an empty list to hold your dictionaries
+    solar_example = []
+
+    # Assuming 'region_name' is common across all DataFrames and uniquely identifies each row,
+    # and that each DataFrame has been appropriately prepared to match the required structure.
+    for region_name in df1['region_name'].unique():
+        # Filter each DataFrame for the current region
+        gen_profile_df = df1[df1['region_name'] == region_name]
+        solar_cost_df = df2[df2['region_name'] == region_name]
+        max_capacity_df = df3[df3['region_name'] == region_name]
+        installed_capacity_df = df4[df4['region_name'] == region_name]
+
+        # Construct the dictionary for the current region
+        region_dict = {
+            'id': region_name,
+            'dependents': [
+                {
+                    'data_type': 'solar_cf',
+                    'parameters': [
+                        {
+                            'type': 'generation_profile',
+                            'generation_profile': {row['hour']: row['value'] for _, row in gen_profile_df.iterrows()}
+                        }
+                    ]
+                },
+                {
+                    'data_type': 'solar_cost',
+                    'parameters': [
+                        {
+                            'type': 'cost',
+                            'cost': {row['cost_class']: row['value'] for _, row in solar_cost_df.iterrows()}
+                        }
+                    ]
+                },
+                {
+                    'data_type': 'solar_max_capacity',
+                    'parameters': [
+                        {
+                            'type': 'max_capacity',
+                            'max_capacity': {row['cost_class']: row['max_capacity'] for _, row in max_capacity_df.iterrows()}
+                        }
+                    ]
+                },
+                {
+                    'data_type': 'solar_installed_capacity',
+                    'parameters': [{'value': row['value']} for _, row in installed_capacity_df.iterrows()]
+                },
+            ]
+        }
+
+        # Add the constructed dictionary to the list
+        solar_example.append(region_dict)
+
+    # solar_example now contains your structured data based on the DataFrames
+
+
+solar_object(Solar_generation_profile_wide, Solar_capital_cost_photov, Solar_regional_capacity, df4)

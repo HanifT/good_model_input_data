@@ -58,7 +58,7 @@ Transmission_index = trans_index(Transmission_Capacity)
 
 Plant_capacity_dic = plant_capacity(Plant_short)
 
-Wind_trans_capital_cost_final, Solar_trans_capital_cost_photov_final = renewable_transmission_cost(Unit_Cost, Regional_Cost, Wind_capital_cost, Solar_capital_cost_photov)
+Wind_trans_capital_cost_final, Solar_trans_capital_cost_photov_final, Wind_capital_cost_copy, Solar_capital_cost_photov_copy = renewable_transmission_cost(Unit_Cost, Regional_Cost, Wind_capital_cost, Solar_capital_cost_photov)
 
 dicts_with_names = {'Plants_Dic': Plants_Dic,
                     'load_final': load_final,
@@ -84,6 +84,7 @@ trasnmission_oo = trans_object(Transmission_Capacity, Transmission_Cost)
 load_oo = load_object(Load_wide)
 generator_oo = gen_object(Plants_group)
 storage_oo = storage_object(Plants_group)
+
 #
 # Pickle the dictionary with names
 with open('dicts_with_names.pkl', 'wb') as pickle_file:
