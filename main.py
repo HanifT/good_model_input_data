@@ -1,11 +1,12 @@
 # %%
 from reading_file import load_data
-import pickle
 from merging_file import (merging_data, assign_fuel_costs, fill_missing_fuel_costs, assign_em_rates, long_wide, transmission_func,
                           ffill_ren_cost, ffill_ren_cap, cluster_and_aggregate, long_wide_load, load_dic, wind_cap_dic, wind_cost_dic, solar_cap_dic,
                           solar_cost_dic, storage_object, solar_object, wind_object, gen_object, load_object,trans_object, transmission_dic1, transmission_dic2, cp_dic, plant_dic, plant_capacity, trans_index, renewable_transmission_cost)
-
 import json
+import numpy as np
+import gzip
+import shutil
 # %% Loading Input Data
 (Plant, Transmission, Parsed, Input, NEEDS, Wind_generation_profile, Load, Wind_onshore_capacity,
  Wind_capital_cost, Solar_regional_capacity, Solar_generation_profile, Solar_capital_cost_photov, Solar_capacity_factor, Regional_Cost, Unit_Cost) = load_data()
@@ -72,7 +73,8 @@ wind_oo = wind_object(Wind_generation_profile_wide, Wind_capital_cost, Wind_onsh
 
 # %% Saving output as JSON file
 # Define the file path for saving the JSON file
-all_objects_file_path = 'all_input_objects.json'
+input_file = 'all_input_objects.json'
+output_file = 'all_input_objects.json.gz'
 
 # Create a dictionary to hold all objects
 all_objects = {
@@ -84,18 +86,41 @@ all_objects = {
     'wind_object': wind_oo
 }
 
-# Convert keys to strings in the all_objects dictionary
-all_objects_str_keys = {str(key): value for key, value in all_objects.items()}
+
+def convert_keys_to_string(obj):
+    if isinstance(obj, dict):
+        return {str(key) if not isinstance(key, np.int64) else str(int(key)): convert_keys_to_string(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_keys_to_string(element) for element in obj]
+    else:
+        return obj
+
+
+# Convert all nested keys to strings
+all_objects_str_keys = convert_keys_to_string(all_objects)
+
 
 # Save all objects as JSON
-with open(all_objects_file_path, 'w') as all_objects_file:
+with open(input_file, 'w') as all_objects_file:
     json.dump(all_objects_str_keys, all_objects_file)
 
-# Define the file path of the JSON file
-all_objects_file_path = 'all_objects.json'
+# Compress the JSON file using gzip
+with open(input_file, 'rb') as f_in:
+    with gzip.open(output_file, 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+
 
 # Read the JSON file
-with open(all_objects_file_path, 'r') as all_objects_file:
+with open(input_file, 'r') as all_objects_file:
     loaded_objects = json.load(all_objects_file)
+
+
+# Open the gzip-compressed file for reading
+with gzip.open(input_file, 'rb') as f:
+    # Read the contents of the file
+    compressed_data = f.read()
+
+# Decode the compressed data as JSON
+json_data = json.loads(compressed_data)
 
 # final
